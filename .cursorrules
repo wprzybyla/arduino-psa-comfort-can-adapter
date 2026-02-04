@@ -1,0 +1,36 @@
+# PSA Comfort CAN Adapter - Project Context
+
+## Project Purpose
+This is a bidirectional CAN bus adapter that translates between:
+- CAN2004 (old BSI protocol) - connected to vehicle's original CAN bus
+- CAN2010 (new protocol) - connected to modern PSA devices (NAC, SMEG, Color Matrix)
+
+## Hardware
+- Board: LilyGO T2CAN (ESP32-S3 with dual MCP2515 CAN controllers)
+- CAN0 (pin 10): Vehicle CAN2004 bus (destination)
+- CAN1 (pin 14): CAN2010 device (source)
+- RTC: DS1307/DS3231 via I2C (pins 8/9)
+
+## Key Files
+- `src/main.cpp`: Main application - CAN message processing loop
+- `src/can_utils.cpp`: Utility functions (checksums, popups, date calculations)
+- `include/BoardConfig_t2can.h`: Hardware pin definitions
+- `include/config.h`: Project configuration (CAN speed, pins)
+- `include/can_utils.h`: Function declarations
+
+## Important Notes
+- SPI must be initialized BEFORE MCP2515 constructors (ESP32-S3 requirement)
+- CAN bus speed: 125 kbps (Entertainment CAN - Low speed)
+- All CAN message IDs are documented in docs/TECHNICAL.md
+- EEPROM layout is documented in docs/TECHNICAL.md
+
+## Documentation
+- README.md: Project overview
+- docs/QUICKSTART.md: Setup guide
+- docs/TECHNICAL.md: Complete technical documentation (ALL CAN IDs, architecture, etc.)
+
+## When Modifying Code
+- CAN message handlers are in `loop()` function in `main.cpp`
+- Add new handlers in appropriate section (CAN0→CAN1 or CAN1→CAN0)
+- Check docs/TECHNICAL.md for CAN message format before adding new handlers
+- Test with debug flags enabled first
