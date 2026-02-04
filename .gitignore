@@ -33,8 +33,3 @@ Thumbs.db
 
 # Project specific
 sdkconfig*
-
-# Local libraries (managed by PlatformIO via lib_deps)
-src/arduino-mcp2515/
-src/Time/
-src/*.zip
