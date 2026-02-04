@@ -14,9 +14,11 @@ This is a bidirectional CAN bus adapter that translates between:
 ## Key Files
 - `src/main.cpp`: Main application - CAN message processing loop
 - `src/can_utils.cpp`: Utility functions (checksums, popups, date calculations)
+- `src/cluster_test.cpp`: Instrument cluster test mode implementation
 - `include/BoardConfig_t2can.h`: Hardware pin definitions
 - `include/config.h`: Project configuration (CAN speed, pins)
 - `include/can_utils.h`: Function declarations
+- `include/cluster_test.h`: Instrument cluster test mode declarations
 - `build.ps1`: PowerShell build script (Windows) - uses PlatformIO's built-in Python
 - `scripts/copy_sdkconfig.py`: Pre-build script that converts sdkconfig.t2can to sdkconfig.h
 

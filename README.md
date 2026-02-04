@@ -14,6 +14,7 @@ This adapter allows you to connect modern PSA CAN2010 devices (like NAC, SMEG, C
 - Steering wheel commands mapping
 - Alert/notification system
 - Personalization settings sync
+- Instrument cluster test mode (simulates CAN2004 messages for testing CAN2010 clusters)
 
 ## Hardware
 
@@ -41,12 +42,14 @@ psa-comfort-can-adapter/
 ├── include/              # Header files
 │   ├── BoardConfig_t2can.h  # LilyGO T2CAN pin definitions
 │   ├── config.h            # Project configuration
-│   └── can_utils.h         # CAN utility functions declarations
+│   ├── can_utils.h         # CAN utility functions declarations
+│   └── cluster_test.h      # Instrument cluster test mode declarations
 ├── scripts/              # Build scripts
 │   └── copy_sdkconfig.py  # Pre-build script for sdkconfig.h
 ├── src/                  # Source files
 │   ├── main.cpp           # Main application (setup/loop)
-│   └── can_utils.cpp      # CAN utility functions implementation
+│   ├── can_utils.cpp      # CAN utility functions implementation
+│   └── cluster_test.cpp   # Instrument cluster test mode implementation
 ├── lib/                  # Private libraries (if any)
 ├── test/                 # Unit tests
 ├── build.ps1             # PowerShell build script (Windows)
@@ -177,14 +180,17 @@ For complete technical details, see **[TECHNICAL.md](docs/TECHNICAL.md)** which 
 
 - **main.cpp**: Main application loop, CAN message processing, state management
 - **can_utils.cpp**: Helper functions for CAN operations (checksums, popups, date calculations)
+- **cluster_test.cpp**: Instrument cluster test mode (simulates CAN2004 messages for testing)
 - **config.h**: Centralized configuration and pin definitions
 - **BoardConfig_t2can.h**: Hardware-specific pin mappings for LilyGO T2CAN
+- **cluster_test.h**: Instrument cluster test mode declarations
 
 ### Adding New Features
 
 1. **New CAN message handler**: Add to `loop()` function in `main.cpp`
 2. **New utility function**: Add to `can_utils.cpp` and declare in `can_utils.h`
 3. **New board support**: Create new `BoardConfig_*.h` and update `config.h`
+4. **New test mode**: Follow pattern from `cluster_test.cpp` for test functionality
 
 ### Testing
 

@@ -95,7 +95,34 @@ With `debugCAN0` and `debugCAN1` enabled, you'll see all CAN messages:
 FRAME:ID=0x36:LEN=8:00:01:02:03:04:05:06:07
 ```
 
-### 3. Test Features
+### 3. Instrument Cluster Test Mode
+
+The adapter includes a test mode for testing CAN2010 instrument clusters without a connected car/BSI. This mode simulates CAN2004 messages and sends them to the CAN2010 cluster.
+
+**Enable Test Mode:**
+Edit `src/main.cpp`:
+```cpp
+bool testClusterMode = true;  // Enable cluster test mode
+```
+
+**Configure Test Values:**
+```cpp
+int testSpeed = 50;           // Vehicle speed (km/h)
+int testRPM = 2000;           // Engine RPM
+int testFuel = 50;            // Fuel level (0-100%)
+unsigned long testOdometer = 12345;  // Odometer (km)
+bool testIgnition = true;     // Ignition state
+byte testScenario = 3;        // Test scenario (0-15)
+bool testAutoIncrement = true; // Auto-cycle through scenarios
+```
+
+**Test Scenarios:**
+- 0: All zeros
+- 1-15: Various speed/RPM/fuel combinations (see `cluster_test.cpp` for details)
+
+**Note**: Test mode sends CAN2004 format messages to CAN1 (CAN2010 cluster), simulating normal adapter behavior where CAN2004 messages from the car are forwarded to CAN2010 devices.
+
+### 4. Test Features
 - Change language in CAN2010 device → should sync
 - Adjust climate control → should translate
 - Press steering wheel buttons → should remap (if enabled)

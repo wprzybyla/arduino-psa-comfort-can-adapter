@@ -90,12 +90,14 @@ Located in `include/config.h`:
 ```
 src/
 ├── main.cpp          # Main application (setup/loop, CAN message processing)
-└── can_utils.cpp     # Utility functions (checksums, popups, date calculations)
+├── can_utils.cpp     # Utility functions (checksums, popups, date calculations)
+└── cluster_test.cpp  # Instrument cluster test mode implementation
 
 include/
 ├── BoardConfig_t2can.h  # Hardware pin definitions
 ├── config.h             # Project configuration
-└── can_utils.h          # Function declarations
+├── can_utils.h          # Function declarations
+└── cluster_test.h       # Instrument cluster test mode declarations
 ```
 
 ### Main Components
@@ -110,6 +112,20 @@ include/
 - **checksumm_0E6()**: Calculates checksum for CAN frame 0xE6
 - **sendPOPup()**: Manages popup notifications on CAN2010 devices
 - **daysSinceYearStartFct()**: Calculates day of year
+
+#### `cluster_test.cpp`
+- **clusterTestInit()**: Initializes cluster test mode
+- **clusterTestLoop()**: Main test loop (sends simulated CAN2004 messages)
+- **encodeRPM()**: Encodes RPM to CAN format
+- **encodeSpeed()**: Encodes speed to CAN format
+- **encodeOdometerBCD()**: Encodes odometer to BCD format
+- **setTestScenario()**: Sets test values based on scenario (0-15)
+
+#### `main.cpp` Helper Functions
+- **eepromUpdate()**: Updates EEPROM only if value changed (protects flash wear)
+  - ESP32 EEPROM is emulated using flash with limited write cycles
+  - Reads before writing and skips if unchanged
+  - Used in CAN message handlers to prevent unnecessary flash writes
 
 ---
 
@@ -136,7 +152,23 @@ bool CVM_Emul = true;                     // Emulate CVM (camera) messages
 bool emulateVIN = false;                  // Replace VIN number
 bool hasAnalogicButtons = false;          // Use analog buttons instead of FMUX
 bool listenCAN2004Language = false;       // Sync language from CAN2004
+bool testClusterMode = false;             // Enable instrument cluster test mode
 ```
+
+### Cluster Test Mode Configuration
+```cpp
+bool testClusterMode = false;        // Enable/disable cluster test mode
+int testSpeed = 0;                   // Vehicle speed (km/h)
+int testRPM = 0;                     // Engine RPM
+int testFuel = 0;                    // Fuel level (0-100%)
+unsigned long testOdometer = 0;     // Odometer (km)
+bool testIgnition = true;            // Ignition state
+byte testScenario = 0;               // Test scenario (0-15)
+bool testAutoIncrement = false;      // Auto-cycle through scenarios
+int testOilTemp = 0xAC;             // Oil temperature (default 0xAC)
+```
+
+**Note**: Cluster test mode simulates CAN2004 messages and sends them to CAN1 (CAN2010 cluster) for testing without a connected car/BSI. Messages are sent in CAN2004 format but routed to CAN2010 device, mimicking normal adapter behavior.
 
 ### Steering Wheel Commands Type
 ```cpp
@@ -169,6 +201,29 @@ byte languageID = 0;  // 0=FR, 1=EN, 2=DE, 3=ES, 4=IT, 5=PT, 6=NL, 9=BR, 12=TR, 
 | 6 | 1 byte | Default month |
 | 7 | 2 bytes | Default year (int) |
 | 10-16 | 7 bytes | Personalization settings |
+
+### Flash Wear Protection
+
+**Important**: ESP32 EEPROM is emulated using flash storage, which has limited write cycles (typically 10,000-100,000 writes per sector). To protect flash from unnecessary wear:
+
+- **`eepromUpdate()` function**: Used in CAN message handlers to update EEPROM only when values actually change
+  - Reads current value before writing
+  - Skips write if value is unchanged
+  - Prevents unnecessary flash writes during normal operation
+
+- **Usage**:
+  - CAN message handlers use `eepromUpdate()` for frequently-triggered settings (language, temperature, personalization)
+  - `EEPROM.write()` is only used in `resetEEPROM` block (intentional reset)
+  - `EEPROM.put()` is used for multi-byte values (year)
+
+**Example**:
+```cpp
+// Good: Only writes if value changed
+eepromUpdate(0, languageAndUnitNum);
+
+// Avoid: Always writes (causes flash wear)
+EEPROM.write(0, languageAndUnitNum);
+```
 
 ---
 
