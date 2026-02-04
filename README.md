@@ -125,6 +125,9 @@ Edit variables in `src/main.cpp`:
 
 ## Documentation
 
+### Quick Start
+New to the project? Start with **[QUICKSTART.md](docs/QUICKSTART.md)** for setup instructions and basic configuration.
+
 ### Technical Documentation
 For complete technical details, see **[TECHNICAL.md](docs/TECHNICAL.md)** which includes:
 - System architecture and data flow
