@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdio>
+
 /**
  * @file config.h
  * @brief Project configuration and pin mappings

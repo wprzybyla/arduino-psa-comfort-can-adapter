@@ -504,7 +504,7 @@ void loop() {
       for (int i = 0; i < len; i++) {
         Serial.print(":");
 
-        snprintf(tmp, 3, "%02X", canMsgRcv.data[i]);
+        snprintf(tmp, (size_t)3, "%02X", canMsgRcv.data[i]);
 
         Serial.print(tmp);
       }
@@ -1625,7 +1625,7 @@ void loop() {
       for (int i = 0; i < len; i++) {
         Serial.print(":");
 
-        snprintf(tmp, 3, "%02X", canMsgRcv.data[i]);
+        snprintf(tmp, (size_t)3, "%02X", canMsgRcv.data[i]);
 
         Serial.print(tmp);
       }
