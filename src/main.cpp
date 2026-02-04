@@ -32,6 +32,7 @@ all copies or substantial portions of the Software.
 // Include configuration and utility functions
 #include <config.h>
 #include <can_utils.h>
+#include <cluster_test.h>
 
 ////////////////////
 // Initialization //
@@ -65,6 +66,27 @@ MCP2515 CAN1(CS_PIN_CAN1); // CAN-BUS Shield N°2 (source)
 bool debugGeneral = false; // Get some debug informations on Serial
 bool debugCAN0 = false; // Read data sent by ECUs from the car to Entertainment CAN bus using https://github.com/alexandreblin/python-can-monitor
 bool debugCAN1 = false; // Read data sent by the NAC / SMEG to Entertainment CAN bus using https://github.com/alexandreblin/python-can-monitor
+
+// ============================================================================
+// INSTRUMENT CLUSTER TEST MODE (CAN2010)
+// ============================================================================
+// Enable this mode to test CAN2010 instrument cluster without connected car/BSI
+// Simulates CAN2004 messages from car and sends them to CAN2010 cluster via CAN1
+// TODO: In future, these will be controllable via web interface
+bool testClusterMode = false;  // Set to true to enable cluster test mode
+
+// Test values - manually configure these for testing
+unsigned long testClusterCounter = 0;  // Internal counter (managed by cluster_test.cpp)
+int testSpeed = 0;                     // Vehicle speed (km/h)
+int testRPM = 0;                       // Engine RPM
+int testFuel = 0;                      // Fuel level (0-100%)
+unsigned long testOdometer = 0;        // Odometer (km)
+bool testIgnition = true;              // Ignition state
+byte testScenario = 0;                 // Test scenario (0-15)
+bool testAutoIncrement = false;        // Auto-cycle through scenarios
+int testOilTemp = 0xAC;                // Oil temperature (default 0xAC)
+// ============================================================================
+
 bool EconomyModeEnabled = true; // You can disable economy mode on the Telematic if you want to - Not recommended at all
 bool Send_CAN2010_ForgedMessages = false; // Send forged CAN2010 messages to the CAR CAN-BUS Network (useful for testing CAN2010 device(s) from already existent connectors)
 bool TemperatureInF = false; // Default Temperature in Celcius
@@ -156,25 +178,34 @@ byte languageAndUnitNum = (languageID * 4) + 128;
 struct can_frame canMsgSnd;
 struct can_frame canMsgRcv;
 
+// Helper function to update EEPROM only if value changed (protects flash wear)
+// ESP32 EEPROM is emulated using flash with limited write cycles
+// This function reads before writing and skips if unchanged
+inline void eepromUpdate(int address, byte value) {
+  if (EEPROM.read(address) != value) {
+    EEPROM.write(address, value);
+  }
+}
+
 void setup() {
   int tmpVal;
 
   if (resetEEPROM) {
-    EEPROM.update(0, 0);
-    EEPROM.update(1, 0);
-    EEPROM.update(2, 0);
-    EEPROM.update(3, 0);
-    EEPROM.update(4, 0);
-    EEPROM.update(5, 0);
-    EEPROM.update(6, 0);
-    EEPROM.update(7, 0);
-    EEPROM.update(10, 0);
-    EEPROM.update(11, 0);
-    EEPROM.update(12, 0);
-    EEPROM.update(13, 0);
-    EEPROM.update(14, 0);
-    EEPROM.update(15, 0);
-    EEPROM.update(16, 0);
+    EEPROM.write(0, 0);
+    EEPROM.write(1, 0);
+    EEPROM.write(2, 0);
+    EEPROM.write(3, 0);
+    EEPROM.write(4, 0);
+    EEPROM.write(5, 0);
+    EEPROM.write(6, 0);
+    EEPROM.write(7, 0);
+    EEPROM.write(10, 0);
+    EEPROM.write(11, 0);
+    EEPROM.write(12, 0);
+    EEPROM.write(13, 0);
+    EEPROM.write(14, 0);
+    EEPROM.write(15, 0);
+    EEPROM.write(16, 0);
   }
 
   if (debugCAN0 || debugCAN1 || debugGeneral) {
@@ -282,8 +313,8 @@ void setup() {
 
     // Set default time (01/01/2020 00:00)
     setTime(Time_hour, Time_minute, 0, Time_day, Time_month, Time_year);
-    EEPROM.update(5, Time_day);
-    EEPROM.update(6, Time_month);
+    eepromUpdate(5, Time_day);
+    eepromUpdate(6, Time_month);
     EEPROM.put(7, Time_year);
   } else if (SerialEnabled) {
     Serial.println("RTC has set the system time");
@@ -324,6 +355,11 @@ void setup() {
     Serial.print(minute());
 
     Serial.println();
+  }
+
+  // Initialize cluster test mode if enabled
+  if (testClusterMode) {
+    clusterTestInit();
   }
 }
 
@@ -446,6 +482,11 @@ void loop() {
       }
       lastButtonState = tmpVal;
     }
+  }
+
+  // Instrument Cluster Test Mode
+  if (testClusterMode) {
+    clusterTestLoop();
   }
 
   // Receive CAN messages from the car
@@ -1319,14 +1360,14 @@ void loop() {
 
         if (tmpVal <= 32 && languageID_CAN2004 != tmpVal) {
           languageID_CAN2004 = tmpVal;
-          EEPROM.update(1, languageID_CAN2004);
+          eepromUpdate(1, languageID_CAN2004);
 
           // Change language and unit on ID 608 for CAN2010 Telematic language change
           languageAndUnitNum = (languageID_CAN2004 * 4) + 128;
           if (kmL) {
             languageAndUnitNum = languageAndUnitNum + 1;
           }
-          EEPROM.update(0, languageAndUnitNum);
+          eepromUpdate(0, languageAndUnitNum);
 
           if (SerialEnabled) {
             Serial.print("CAN2004 Matrix - Change Language: ");
@@ -1604,8 +1645,8 @@ void loop() {
 
         setTime(Time_hour, Time_minute, 0, Time_day, Time_month, Time_year);
         RTC.set(now()); // Set the time on the RTC module too
-        EEPROM.update(5, Time_day);
-        EEPROM.update(6, Time_month);
+        eepromUpdate(5, Time_day);
+        eepromUpdate(6, Time_month);
         EEPROM.put(7, Time_year);
 
         // Set hour on CAN-BUS Clock
@@ -1728,7 +1769,7 @@ void loop() {
           tmpVal = canMsgRcv.data[0];
           if (tmpVal >= 128) {
             languageAndUnitNum = tmpVal;
-            EEPROM.update(0, languageAndUnitNum);
+            eepromUpdate(0, languageAndUnitNum);
 
             if (SerialEnabled) {
               Serial.print("Telematic - Change Language and Unit (Number): ");
@@ -1739,17 +1780,17 @@ void loop() {
             tmpVal = canMsgRcv.data[1];
             if (tmpVal >= 128) {
               mpgMi = true;
-              EEPROM.update(4, 1);
+              eepromUpdate(4, 1);
 
               tmpVal = tmpVal - 128;
             } else {
               mpgMi = false;
-              EEPROM.update(4, 0);
+              eepromUpdate(4, 0);
             }
 
             if (tmpVal >= 64) {
               TemperatureInF = true;
-              EEPROM.update(3, 1);
+              eepromUpdate(3, 1);
 
               if (SerialEnabled) {
                 Serial.print("Telematic - Change Temperature Type: Fahrenheit");
@@ -1757,7 +1798,7 @@ void loop() {
               }
             } else if (tmpVal >= 0) {
               TemperatureInF = false;
-              EEPROM.update(3, 0);
+              eepromUpdate(3, 0);
 
               if (SerialEnabled) {
                 Serial.print("Telematic - Change Temperature Type: Celcius");
@@ -1850,13 +1891,13 @@ void loop() {
           personalizationSettings[4] = canMsgSnd.data[5];
           personalizationSettings[5] = canMsgSnd.data[6];
           personalizationSettings[6] = canMsgSnd.data[7];
-          EEPROM.update(10, personalizationSettings[0]);
-          EEPROM.update(11, personalizationSettings[1]);
-          EEPROM.update(12, personalizationSettings[2]);
-          EEPROM.update(13, personalizationSettings[3]);
-          EEPROM.update(14, personalizationSettings[4]);
-          EEPROM.update(15, personalizationSettings[5]);
-          EEPROM.update(16, personalizationSettings[6]);
+          eepromUpdate(10, personalizationSettings[0]);
+          eepromUpdate(11, personalizationSettings[1]);
+          eepromUpdate(12, personalizationSettings[2]);
+          eepromUpdate(13, personalizationSettings[3]);
+          eepromUpdate(14, personalizationSettings[4]);
+          eepromUpdate(15, personalizationSettings[5]);
+          eepromUpdate(16, personalizationSettings[6]);
         }
       } else if (id == 0x1E9 && len >= 2 && CVM_Emul) { // Telematic suggested speed to fake CVM frame
         CAN0.sendMessage( & canMsgRcv);

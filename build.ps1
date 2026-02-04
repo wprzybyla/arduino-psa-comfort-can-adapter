@@ -25,6 +25,6 @@ if ($args.Count -eq 0) {
     Write-Host "Building project..." -ForegroundColor Cyan
     pio run
 } else {
-    Write-Host "Running: pio $($args -join ' ')" -ForegroundColor Cyan
-    pio $args
+    Write-Host "Running: pio run $($args -join ' ')" -ForegroundColor Cyan
+    pio run $args
 }
