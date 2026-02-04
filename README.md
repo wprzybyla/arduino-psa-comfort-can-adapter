@@ -125,6 +125,16 @@ Edit variables in `src/main.cpp`:
 
 ## Documentation
 
+### Technical Documentation
+For complete technical details, see **[TECHNICAL.md](docs/TECHNICAL.md)** which includes:
+- System architecture and data flow
+- Complete CAN message mapping (all IDs documented)
+- Code structure and organization
+- Configuration variables reference
+- EEPROM layout
+- Development guide and troubleshooting
+
+### External Resources
 - [Original Tutorial (Forum-Peugeot.com)](http://www.forum-peugeot.com/Forum/threads/tuto-adaptateur-pour-smeg-nac-en-seconde-monte-sur-bsi-evolu%C3%A9.18068/)
 
 ## Development
