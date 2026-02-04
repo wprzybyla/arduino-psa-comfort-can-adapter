@@ -17,20 +17,107 @@ This is a bidirectional CAN bus adapter that translates between:
 - `include/BoardConfig_t2can.h`: Hardware pin definitions
 - `include/config.h`: Project configuration (CAN speed, pins)
 - `include/can_utils.h`: Function declarations
+- `build.ps1`: PowerShell build script (Windows) - uses PlatformIO's built-in Python
+- `scripts/copy_sdkconfig.py`: Pre-build script that converts sdkconfig.t2can to sdkconfig.h
 
 ## Important Notes
 - SPI must be initialized BEFORE MCP2515 constructors (ESP32-S3 requirement)
 - CAN bus speed: 125 kbps (Entertainment CAN - Low speed)
 - All CAN message IDs are documented in docs/TECHNICAL.md
 - EEPROM layout is documented in docs/TECHNICAL.md
+- PlatformIO uses built-in Python (`~/.platformio/penv`) - don't override with system Python
+- Windows users should use `build.ps1` script to avoid Windows Store Python issues
 
-## Documentation
-- README.md: Project overview
-- docs/QUICKSTART.md: Setup guide
-- docs/TECHNICAL.md: Complete technical documentation (ALL CAN IDs, architecture, etc.)
+## Documentation Structure
+- `README.md`: Project overview, features, getting started, links to all docs
+- `docs/QUICKSTART.md`: Quick setup guide, basic configuration, hardware connections
+- `docs/TECHNICAL.md`: Complete technical documentation (ALL CAN IDs, architecture, code structure)
+- `docs/TROUBLESHOOTING.md`: Common problems and solutions (Python issues, compilation errors, etc.)
+- `docs/EXTENSIONS.md`: VS Code/Cursor extensions guide (required, optional, unwanted)
+
+## Documentation Maintenance Rules
+
+### AUTOMATIC DOCUMENTATION UPDATES REQUIRED
+
+When making ANY changes to the project, you MUST automatically update relevant documentation:
+
+1. **When modifying `platformio.ini`:**
+   - Update library versions in `README.md` (Libraries section)
+   - Update `docs/QUICKSTART.md` if build process changes
+   - Update `docs/TROUBLESHOOTING.md` if new dependencies are added
+
+2. **When modifying code files (`src/*.cpp`, `include/*.h`):**
+   - Update `docs/TECHNICAL.md` if adding new CAN message handlers
+   - Update `README.md` (Code Structure section) if file structure changes
+   - Update function documentation in code comments
+
+3. **When adding new files:**
+   - Update `README.md` (Project Structure section)
+   - Update `.cursorrules` (Key Files section)
+   - Add to appropriate documentation file
+
+4. **When modifying build process:**
+   - Update `build.ps1` if PowerShell script needs changes
+   - Update `docs/QUICKSTART.md` (Build Project section)
+   - Update `docs/TROUBLESHOOTING.md` if new build issues arise
+
+5. **When adding/removing dependencies:**
+   - Update `platformio.ini` lib_deps
+   - Update `README.md` (Libraries section) with correct library names and versions
+   - Update `docs/TROUBLESHOOTING.md` if library causes issues
+
+6. **When modifying configuration files:**
+   - Update `docs/QUICKSTART.md` (Configuration section)
+   - Update `docs/TECHNICAL.md` (Configuration Variables section)
+   - Update `README.md` if configuration affects setup
+
+7. **When adding new features:**
+   - Document in `docs/TECHNICAL.md`
+   - Add examples to `docs/QUICKSTART.md` if user-facing
+   - Update `README.md` (Features section)
+
+### Documentation Consistency Checklist
+
+Before completing any task, verify:
+- [ ] All file paths in documentation match actual project structure
+- [ ] Library names and versions in README.md match platformio.ini
+- [ ] Code examples in documentation are current and work
+- [ ] Links between documentation files are correct
+- [ ] Project structure diagram in README.md is accurate
+- [ ] Troubleshooting guide covers new issues
+- [ ] Extension recommendations are up to date
+
+### Documentation Style Guidelines
+
+- Use clear, concise language
+- Include code examples where helpful
+- Link between related documentation files
+- Keep examples up to date with actual code
+- Use consistent formatting (markdown headers, code blocks)
+- Add "See also" links to related sections
 
 ## When Modifying Code
 - CAN message handlers are in `loop()` function in `main.cpp`
 - Add new handlers in appropriate section (CAN0→CAN1 or CAN1→CAN0)
 - Check docs/TECHNICAL.md for CAN message format before adding new handlers
 - Test with debug flags enabled first
+- **ALWAYS update documentation when adding new CAN handlers or features**
+
+## Build and Development
+
+### Windows Development
+- Use `.\build.ps1` script for building (handles Python path automatically)
+- Script uses PlatformIO's built-in Python to avoid Windows Store Python issues
+- See `docs/TROUBLESHOOTING.md` for Python-related issues
+
+### Extension Configuration
+- Required: PlatformIO IDE
+- Optional: Python extensions (won't interfere if configured correctly)
+- Unwanted: C/C++ Extension Pack, clangd (conflict with PlatformIO IntelliSense)
+- See `docs/EXTENSIONS.md` for complete guide
+
+### Configuration Files
+- `.vscode/settings.json`: PlatformIO Python configuration, extension settings
+- `.vscode/extensions.json`: Extension recommendations
+- `platformio.ini`: Project configuration, libraries, build flags
+- `build.ps1`: PowerShell build script for Windows

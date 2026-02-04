@@ -33,16 +33,25 @@ This adapter allows you to connect modern PSA CAN2010 devices (like NAC, SMEG, C
 
 ```
 psa-comfort-can-adapter/
+├── docs/                 # Documentation
+│   ├── QUICKSTART.md     # Quick setup guide
+│   ├── TECHNICAL.md       # Complete technical documentation
+│   ├── TROUBLESHOOTING.md # Troubleshooting guide
+│   └── EXTENSIONS.md     # VS Code/Cursor extensions guide
 ├── include/              # Header files
 │   ├── BoardConfig_t2can.h  # LilyGO T2CAN pin definitions
 │   ├── config.h            # Project configuration
 │   └── can_utils.h         # CAN utility functions declarations
+├── scripts/              # Build scripts
+│   └── copy_sdkconfig.py  # Pre-build script for sdkconfig.h
 ├── src/                  # Source files
 │   ├── main.cpp           # Main application (setup/loop)
 │   └── can_utils.cpp      # CAN utility functions implementation
 ├── lib/                  # Private libraries (if any)
 ├── test/                 # Unit tests
+├── build.ps1             # PowerShell build script (Windows)
 ├── platformio.ini        # PlatformIO configuration
+├── sdkconfig.t2can      # ESP-IDF SDK configuration
 └── README.md            # This file
 ```
 
@@ -68,11 +77,27 @@ pio project init
 ```
 
 3. Build the project:
+
+**Option 1: Use PowerShell script (Recommended on Windows)**
+```powershell
+.\build.ps1
+```
+
+**Option 2: Direct PlatformIO command**
 ```bash
 pio run
 ```
 
+**Note**: The PowerShell script (`build.ps1`) automatically uses PlatformIO's built-in Python, avoiding Windows Store Python issues.
+
 4. Upload to board:
+
+**Option 1: Use PowerShell script (Recommended on Windows)**
+```powershell
+.\build.ps1 --target upload
+```
+
+**Option 2: Direct PlatformIO command**
 ```bash
 pio run --target upload
 ```
@@ -128,6 +153,12 @@ Edit variables in `src/main.cpp`:
 ### Quick Start
 New to the project? Start with **[QUICKSTART.md](docs/QUICKSTART.md)** for setup instructions and basic configuration.
 
+### Extensions
+Wondering which VS Code/Cursor extensions you need? See **[EXTENSIONS.md](docs/EXTENSIONS.md)** for recommendations and conflicts.
+
+### Troubleshooting
+Having issues? Check **[TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md)** for common problems and solutions.
+
 ### Technical Documentation
 For complete technical details, see **[TECHNICAL.md](docs/TECHNICAL.md)** which includes:
 - System architecture and data flow
@@ -166,9 +197,11 @@ pio test
 
 This project uses the following libraries (managed by PlatformIO):
 
-- `autowp/arduino-mcp2515@^1.2.0` - MCP2515 CAN controller library
-- `paulstoffregen/DS1307RTC@^1.4.1` - RTC support
-- `paulstoffregen/Time@^1.6.1` - Time library
+- `autowp/autowp-mcp2515@^1.3.1` - MCP2515 CAN controller library
+- `paulstoffregen/DS1307RTC` - RTC support for DS1307/DS3231
+- `paulstoffregen/Time@^1.6.1` - Time library for RTC integration
+
+All libraries are automatically downloaded by PlatformIO when you build the project. See `platformio.ini` for complete library configuration.
 
 ## License
 

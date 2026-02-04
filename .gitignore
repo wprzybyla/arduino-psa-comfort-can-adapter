@@ -35,3 +35,6 @@ Thumbs.db
 sdkconfig
 sdkconfig.*
 !sdkconfig.t2can  # Keep our custom SDK config file
+
+# PowerShell (keep build.ps1 in repo)
+# *.ps1  # Don't ignore PowerShell scripts

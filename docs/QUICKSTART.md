@@ -13,11 +13,25 @@ cd arduino-psa-comfort-can-adapter
 - Or install [PlatformIO Core](https://platformio.org/install/cli)
 
 ### 3. Build Project
+
+**Windows (Recommended):**
+```powershell
+.\build.ps1
+```
+
+**Linux/Mac or Direct:**
 ```bash
 pio run
 ```
 
 ### 4. Upload to Board
+
+**Windows:**
+```powershell
+.\build.ps1 --target upload
+```
+
+**Linux/Mac or Direct:**
 ```bash
 pio run --target upload
 ```
@@ -26,6 +40,8 @@ pio run --target upload
 ```bash
 pio device monitor
 ```
+
+**Note**: The `build.ps1` script automatically uses PlatformIO's built-in Python, avoiding Windows Store Python issues. See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for details.
 
 ## Basic Configuration
 
@@ -97,9 +113,11 @@ FRAME:ID=0x36:LEN=8:00:01:02:03:04:05:06:07
 - Ensure RTC is initialized
 
 ### Compilation Errors
+- **Windows**: Use `.\build.ps1` script to avoid Python issues (recommended)
 - Ensure all libraries are installed: `pio lib install`
-- Check Python installation (not Windows Store version)
+- Check Python installation (PlatformIO has built-in Python)
 - Verify `platformio.ini` configuration
+- See [TROUBLESHOOTING.md](TROUBLESHOOTING.md) for detailed solutions
 
 ## Next Steps
 
