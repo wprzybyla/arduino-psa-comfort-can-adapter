@@ -32,4 +32,6 @@ Thumbs.db
 *~
 
 # Project specific
-sdkconfig*
+sdkconfig
+sdkconfig.*
+!sdkconfig.t2can  # Keep our custom SDK config file
