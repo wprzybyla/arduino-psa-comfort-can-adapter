@@ -29,27 +29,33 @@ all copies or substantial portions of the Software.
 #include <DS1307RTC.h> // https://github.com/PaulStoffregen/DS1307RTC
 #include <mcp2515.h> // https://github.com/autowp/arduino-mcp2515 + https://github.com/watterott/Arduino-Libs/tree/master/digitalWriteFast
 
-/////////////////////
-//  Configuration  //
-/////////////////////
-
-#define CS_PIN_CAN0 10
-#define CS_PIN_CAN1 9
-#define SERIAL_SPEED 115200
-#define CAN_SPEED CAN_125KBPS // Entertainment CAN bus - Low speed
-#define CAN_FREQ MCP_16MHZ // Switch to 8MHZ if you have a 8Mhz module
-
-///////////////////////
-// Private functions //
-///////////////////////
-byte checksumm_0E6(const byte* frame);
+// Include configuration and utility functions
+#include <config.h>
+#include <can_utils.h>
 
 ////////////////////
 // Initialization //
 ////////////////////
 
-MCP2515 CAN0(CS_PIN_CAN0); // CAN-BUS Shield N°1
-MCP2515 CAN1(CS_PIN_CAN1); // CAN-BUS Shield N°2
+// Note: On ESP32-S3, we need to initialize SPI with custom pins BEFORE creating MCP2515 objects
+// Since MCP2515 objects are global, we'll initialize SPI early using a workaround
+// For ESP32-S3, SPI.begin() with pins must be called before MCP2515 constructor
+// We'll use a static initialization function
+static void initSPIForT2CAN() {
+  // Initialize SPI with custom pins for T2CAN board
+  // This must be called before MCP2515 constructors
+  SPI.begin(BOARD_SCK_PIN, BOARD_MISO_PIN, BOARD_MOSI_PIN);
+}
+
+// Initialize SPI early (before MCP2515 constructors)
+// This is a workaround for ESP32-S3 where we need custom SPI pins
+static bool spiInitialized = []() {
+  initSPIForT2CAN();
+  return true;
+}();
+
+MCP2515 CAN0(CS_PIN_CAN0); // CAN-BUS Shield N°1 (destination)
+MCP2515 CAN1(CS_PIN_CAN1); // CAN-BUS Shield N°2 (source)
 
 ////////////////////
 //   Variables    //
@@ -234,6 +240,14 @@ void setup() {
     pinMode(volDownButton, INPUT_PULLUP);
     pinMode(volUpButton, INPUT_PULLUP);
   }
+
+  // Re-initialize SPI with custom pins to ensure they're correct after MCP2515 constructors
+  // On ESP32-S3, MCP2515 constructor calls SPI.begin() without pins, which might use defaults
+  // This ensures we use the correct pins from BoardConfig_t2can.h
+  SPI.begin(BOARD_SCK_PIN, BOARD_MISO_PIN, BOARD_MOSI_PIN);
+  
+  // Initialize I2C for RTC (DS1307/DS3231) with custom pins for T2CAN QWIIC interface
+  Wire.begin(BOARD_SDA_PIN, BOARD_SCL_PIN);
 
   if (SerialEnabled) {
     // Initalize Serial for debug
@@ -1931,111 +1945,4 @@ void loop() {
   }
 }
 
-void sendPOPup(bool present, int id, byte priority, byte parameters) {
-  bool clear = false;
-  byte firstEmptyPos = 8;
-
-  for (int i = 0; i < 8; i++) {
-    if (alertsCache[i] == id) {
-      if (!present) { // Remove from cache and clear popup
-        alertsCache[i] = alertsParametersCache[i] = firstEmptyPos = 0;
-        clear = true;
-        break;
-      } else if (parameters == alertsParametersCache[i]) { // Already sent
-        return;
-      } else {
-        return sendPOPup(false, id, priority, 0x00); // Clear previous popup first
-      }
-    } else if (alertsCache[i] == 0 && firstEmptyPos >= 8) {
-      firstEmptyPos = i;
-    }
-  }
-
-  if (firstEmptyPos >= 8) {
-    return; // Avoid overflow    
-  }
-  if (!present && !clear) {
-    return;
-  } else if (!clear) {
-    alertsCache[firstEmptyPos] = id;
-    alertsParametersCache[firstEmptyPos] = parameters;
-
-    if (SerialEnabled && present) {
-      Serial.print("Notification sent with message ID: ");
-      Serial.println(id);
-    }
-  }
-
-  if (priority > 14) {
-    priority = 14;
-  }
-
-  if (present) {
-    canMsgSnd.data[0] = highByte(id); 
-    canMsgSnd.data[1] = lowByte(id);
-    bitWrite(canMsgSnd.data[0], 7, present); // New message
-  } else { // Close Popup
-    canMsgSnd.data[0] = 0x7F; 
-    canMsgSnd.data[1] = 0xFF;
-  }
-  canMsgSnd.data[2] = priority; // Priority (0 > 14)
-  bitWrite(canMsgSnd.data[2], 7, 1); // Destination: NAC / EMF / MATT
-  bitWrite(canMsgSnd.data[2], 6, 1); // Destination: CMB
-  canMsgSnd.data[3] = parameters; // Parameters
-  canMsgSnd.data[4] = 0x00; // Parameters
-  canMsgSnd.data[5] = 0x00; // Parameters
-  canMsgSnd.data[6] = 0x00; // Parameters
-  canMsgSnd.data[7] = 0x00; // Parameters
-  canMsgSnd.can_id = 0x1A1;
-  canMsgSnd.can_dlc = 8;
-  CAN1.sendMessage( & canMsgSnd);
-
-  return;
-}
-
-int daysSinceYearStartFct() {
-  // Given a day, month, and year (4 digit), returns
-  // the day of year. Errors return 999.
-  int daysInMonth[] = {31,28,31,30,31,30,31,31,30,31,30,31};
-  // Check if it is a leap year, this is confusing business
-  // See: https://support.microsoft.com/en-us/kb/214019
-  if (year()%4  == 0) {
-    if (year()%100 != 0) {
-      daysInMonth[1] = 29;
-    }
-    else {
-      if (year()%400 == 0) {
-        daysInMonth[1] = 29;
-      }
-    }
-   }
-
-  int doy = 0;
-  for (int i = 0; i < month() - 1; i++) {
-    doy += daysInMonth[i];
-  }
-
-  doy += day();
-  return doy;
-}
-
-byte checksumm_0E6(const byte* frame)
-{
-    /* Autors:
-        organizer of the bacchanal: styleflava
-        algorithm: Ilia
-        code: Pepelxl
-    */
-    static byte iter = 0;
-    byte cursumm = 0;
-    for (byte i = 0; i < 7; i++)
-    {
-        cursumm += (frame[i] >> 4) + (frame[i] & 0x0F);
-    }
-    cursumm += iter;
-    cursumm = ((cursumm ^ 0xFF) - 3) & 0x0F;
-    cursumm ^= iter << 4;
-    iter++;
-    if (iter >= 16) iter = 0;
-    return cursumm;
-}
+// Helper functions are now in can_utils.cpp

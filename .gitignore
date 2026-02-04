@@ -1,0 +1,40 @@
+# PlatformIO
+.pio/
+.pioenvs/
+.piolibdeps/
+.clang_complete
+.gcc-flags.json
+
+# VS Code / Cursor
+.vscode/
+.cursor/
+
+# Build artifacts
+*.o
+*.elf
+*.bin
+*.hex
+*.map
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+*.swp
+*.swo
+*~
+
+# Project specific
+sdkconfig*
+
+# Local libraries (managed by PlatformIO via lib_deps)
+src/arduino-mcp2515/
+src/Time/
+src/*.zip
